@@ -17,7 +17,8 @@ Or install it yourself as:
     $ gem install crypto_gost3411
 
 ## Usage
-require 'crypto_gost3411'
+
+```rubyrequire 'crypto_gost3411'
 include CryptoGost3411
 
 # one-step digest 64 bytes
@@ -30,9 +31,10 @@ ctx = Gost3411.new(32)
 ctx.update(data1)
 ctx.update(data2)
 digest32 = ctx.final
+```
 
-# results: 
-
+## Results 
+```
 data1 digest 64 bytes:
 e03cbcfe6843fc96
 6607cdd67a77de22
@@ -47,6 +49,7 @@ c0bf500c50d02096
 97fdb8629c4bc3c1
 24f294bcf346c905
 112f0a8e1155917e
+```
  
 ## Development
 
