@@ -25,6 +25,8 @@ include CryptoGost3411
 # one-step digest 64 bytes
 data1 = 'ruby'
 digest64 = Gost3411.new(64).update(data1).final
+puts 'data1 digest 64 bytes:'
+digest64.unpack('H*')[0].scan(/.{16}/).each{|line| puts line}
 
 # multipart digest 32 bytes
 data2 = 'gost'
@@ -32,6 +34,8 @@ ctx = Gost3411.new(32)
 ctx.update(data1)
 ctx.update(data2)
 digest32 = ctx.final
+puts 'data1+data2 digest 32 bytes:'
+digest32.unpack('H*')[0].scan(/.{16}/).each{|line| puts line}
 ```
 
 ## Results 
