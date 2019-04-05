@@ -31,6 +31,23 @@ ctx.update(data1)
 ctx.update(data2)
 digest32 = ctx.final
 
+# results: 
+
+data1 digest 64 bytes:
+e03cbcfe6843fc96
+6607cdd67a77de22
+38549548989e63eb
+9a0d9690f3e468f8
+c7a555c55decfbd5
+aab8b99ea945de7d
+50e717313125d033
+015bbb54407f0d69
+data1+data2 digest 32 bytes:
+c0bf500c50d02096
+97fdb8629c4bc3c1
+24f294bcf346c905
+112f0a8e1155917e
+ 
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
