@@ -18,7 +18,8 @@ Or install it yourself as:
 
 ## Usage
 
-```rubyrequire 'crypto_gost3411'
+```ruby
+require 'crypto_gost3411'
 include CryptoGost3411
 
 # one-step digest 64 bytes
