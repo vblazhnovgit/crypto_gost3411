@@ -23,7 +23,7 @@ module CryptoGost3411
     end
 
     def update(data)
-      bytes = data.force_encoding('BINARY')
+      bytes = data.dup.force_encoding('BINARY')
       bytes_len = bytes.length
       # Nothing to do for empty string
       if bytes_len > 0 then
