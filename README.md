@@ -1,5 +1,7 @@
 # CryptoGost3411
 
+GOST R 34.11-2012 (Stribog) digest algorithm
+
 ## Installation
 
 Add this line to your application's Gemfile:

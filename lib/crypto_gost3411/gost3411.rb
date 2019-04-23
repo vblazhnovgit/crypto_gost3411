@@ -23,18 +23,19 @@ module CryptoGost3411
     end
 
     def update(data)
-      data_len = data.length
+      bytes = data.force_encoding('BINARY')
+      bytes_len = bytes.length
       # Nothing to do for empty string
-      if data_len > 0 then
+      if bytes_len > 0 then
         len = 0
-        len = @block_len + data_len;
+        len = @block_len + bytes_len;
         if len < 64 then
-          @block += data
+          @block += bytes
           @block_len = len
         else
           index = 0
           while len >= 64			
-            @block += data[index...(index + 64-@block_len)]
+            @block += bytes[index...(index + 64-@block_len)]
             transform(512)
             index += 64 - @block_len
             len -= 64
@@ -42,7 +43,7 @@ module CryptoGost3411
             @block_len = 0
           end
           if len > 0 then
-            @block = data[index...index + len]
+            @block = bytes[index...index + len]
             @block_len = len;
           end
         end
