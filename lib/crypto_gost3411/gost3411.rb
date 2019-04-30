@@ -2,6 +2,7 @@ module CryptoGost3411
   class Gost3411
 
     def initialize(digest_size=64)
+      #puts 'initialize'
       if digest_size != 32 then 	
         digest_size = 64
       end
@@ -19,10 +20,11 @@ module CryptoGost3411
       @nN = [0,0,0,0,0,0,0,0]
       # byte string
       @block = ''
-      @block_len = 0
+      @block_len = 0      
     end
 
     def update(data)
+      #puts 'update'
       bytes = data.dup.force_encoding('BINARY')
       bytes_len = bytes.length
       # Nothing to do for empty string
@@ -36,7 +38,7 @@ module CryptoGost3411
           index = 0
           while len >= 64			
             @block += bytes[index...(index + 64-@block_len)]
-            transform(512)
+            transform(64)
             index += 64 - @block_len
             len -= 64
             @block = ''
@@ -44,21 +46,26 @@ module CryptoGost3411
           end
           if len > 0 then
             @block = bytes[index...index + len]
-            @block_len = len;
+            @block_len = len
           end
         end
       end
+      #puts 'block:'
+      #printBytes(@block, 64)
       return self
     end
 
     def final
-      @block += "\x01"   
+      #puts 'final'
+      @block += 1.chr
       while @block.length < 64
-        @block += "\x00"
+        @block += 0.chr
       end
+      #puts 'block:'
+      #printBytes(@block, 64)
       # Don't increment @block_len for padding!
       
-      transform(@block_len * 8)
+      transform(@block_len)
 
       zZ = [0,0,0,0,0,0,0,0]
       funcG(@resH, @nN, zZ);
@@ -114,7 +121,7 @@ module CryptoGost3411
     
     # Rotate the 32 bit unsigned integer x by n bits left/right
     def rol32(x, n)
-      ( (x << (n&(32-1))) | (x >> ((32-n)&(32-1)))) & 0xFFFFFFFF
+      ((x << (n&(32-1))) | (x >> ((32 - n)&(32-1)))) & 0xFFFFFFFF
     end
     
     def ror32(x, n)
@@ -175,38 +182,41 @@ module CryptoGost3411
         h[i] ^= tt[i] ^ kk[i] ^ m[i]
       end
     end
+    
+    def self.add512(x, y)
+      x512 = x[7]
+      (1...8).each do |i|
+        x512 = x512*(2**64) + x[7-i]
+      end  
+      y512 = y[7]
+      (1...8).each do |i|
+        y512 = y512*(2**64) + y[7-i]
+      end
+      r512 = (x512 + y512)%(2**512)
+      r = []
+      (0...8).each do |i|
+        r << r512%(2**64)
+        r512 = (r512-r[-1])/(2**64)
+      end
+      r
+    end
 
-    def transform(nbits)
+    def transform(nbytes)
+      count512 = [nbytes*8,0,0,0,0,0,0,0]
       mM = []
       (0...8).each do |i|
         mM << bufGetLE64(@block[(i * 8)...(i * 8 + 8)])
       end  
 
       funcG(@resH, mM, @nN)
-      ll = @nN[0]
-      @nN[0] += nbits
-      # truncate overload
-      @nN[0] &= 0xFFFFFFFFFFFFFFFF
-      if @nN[0] < ll then
-        # overload
-        (1...8).each do |i|
-          @nN[i] += 1
-          break if @nN[i] != 0 
-        end
-      end
-
-      @sigma[0] += mM[0]
-      # truncate overload
-      @sigma[0] &= 0xFFFFFFFFFFFFFFFF
-      (1...8).each do |i|
-        if @sigma[i-1] < mM[i-1] then
-          @sigma[i] += (mM[i] + 1)
-        else
-          @sigma[i] += mM[i]
-        end  
-        # truncate overload
-        @sigma[i] &= 0xFFFFFFFFFFFFFFFF
-      end 
+      
+      @nN = self.class.add512(@nN, count512)
+      @sigma = self.class.add512(@sigma, mM)
     end
+    
+    def self.printBytes(bytes, line_size = 16)
+      bytes.unpack('H*')[0].scan(/.{1,#{line_size}}/).each{|s| puts(s)}
+    end
+
   end
 end
