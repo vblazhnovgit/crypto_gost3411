@@ -9,8 +9,8 @@ Gem::Specification.new do |spec|
   spec.authors       = ["vblazhnovgit"]
   spec.email         = ["vblazhnov@yandex.ru"]
 
-  spec.summary       = %q{GOST R 34.11-94 digest}
-  spec.description   = %q{Cryptographic digest algorithm GOST R 34.11-94 (Stribog)}
+  spec.summary       = %q{GOST R 34.11-2012 digest}
+  spec.description   = %q{Cryptographic digest algorithm GOST R 34.11-2012 (Stribog)}
   spec.homepage      = "https://github.com/vblazhnovgit/crypto_gost3411.git"
   spec.license       = "MIT"
 

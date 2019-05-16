@@ -2,7 +2,6 @@ module CryptoGost3411
   class Gost3411
 
     def initialize(digest_size=64)
-      #puts 'initialize'
       if digest_size != 32 then 	
         digest_size = 64
       end
@@ -24,13 +23,11 @@ module CryptoGost3411
     end
 
     def update(data)
-      #puts 'update'
       bytes = data.dup.force_encoding('BINARY')
       bytes_len = bytes.length
       # Nothing to do for empty string
       if bytes_len > 0 then
-        len = 0
-        len = @block_len + bytes_len;
+        len = @block_len + bytes_len
         if len < 64 then
           @block += bytes
           @block_len = len
@@ -50,33 +47,21 @@ module CryptoGost3411
           end
         end
       end
-      #puts 'block:'
-      #printBytes(@block, 64)
       return self
     end
 
     def final
-      #puts 'final'
       @block += 1.chr
       while @block.length < 64
         @block += 0.chr
       end
-      #puts 'block:'
-      #printBytes(@block, 64)
       # Don't increment @block_len for padding!
-      
       transform(@block_len)
-
       zZ = [0,0,0,0,0,0,0,0]
-      funcG(@resH, @nN, zZ);
-      funcG(@resH, @sigma, zZ);
-
-      (0...8).each do |i|
-        @resH[i] = bswap64(@resH[i])
-      end
-      
+      funcG(@resH, @nN, zZ)
+      funcG(@resH, @sigma, zZ)
       dgst = ''
-      @resH.each {|n| dgst += uint64ToUint8(n)}
+      @resH.each {|n| dgst += uint64ToUint8LE(n)}
       if @digest_size == 32
         dgst = dgst[32..-1]
       end  
@@ -90,68 +75,21 @@ module CryptoGost3411
     end
     
     private
-    
-    # 's' stands for native-endian byte order but 'n' stands for network (big-endian) byte order
-    BigEndian = [1].pack('s') == [1].pack('n')
-
-    # Unload 64-bit number to 8-byte string
-    # (big-endian, adding leading zeroes)
-    def uint64ToUint8BE(n)
-      str = n.to_s(16) # big-endian
-      len = str.length
-      # add leading zeroes
-      str.insert(0, '0'*(16 - len)) if len < 16
-      # To byte string
-      bytes = [str].pack('H*')
-    end 
+  
+    Two64 = 1 << 64
+    Two512 = 1 << 512
     
     # Unload 64-bit number to 8-byte string
-    # (native-endian, adding leading zeroes)
-    def uint64ToUint8(n)
-      bytes = uint64ToUint8BE(n)    
-      bytes.reverse! unless BigEndian   
-      return bytes
+    # (little-endian, adding leading zeroes)
+    def uint64ToUint8LE(n)
+      [n % 0x100000000].pack("V") + [n / 0x100000000].pack("V")
     end
     
-    # Unpacks 8-byte string to 64-bit number 
-    # (native-endian)
+    # Unpack 8-byte (little-endian) string to 64-bit number (native-endian)
     def uint8ToUint64(bytes)
       bytes.unpack('Q*')[0]
     end
     
-    # Rotate the 32 bit unsigned integer x by n bits left/right
-    def rol32(x, n)
-      ((x << (n&(32-1))) | (x >> ((32 - n)&(32-1)))) & 0xFFFFFFFF
-    end
-    
-    def ror32(x, n)
-      ((x >> (n&(32-1))) | (x << ((32 - n)&(32-1)))) & 0xFFFFFFFF
-    end
-     
-    # Byte swap for 32-bit and 64-bit integers
-    def bswap32(x)
-      if BigEndian
-        return ((rol32(x, 8) & 0x00ff00ff) | (ror32(x, 8) & 0xff00ff00))
-      else
-        return x
-      end  
-    end
-    
-    def bswap64(x)
-      if BigEndian
-        return (bswap32(x%0x100000000) << 32) | (bswap32((x >> 32)&0xFFFFFFFF))
-      else
-        return x
-      end  
-    end
-
-    def bufGetLE64(buf)
-      return (buf[7].ord << 56) | (buf[6].ord << 48) | 
-             (buf[5].ord << 40) | (buf[4].ord << 32) | 
-             (buf[3].ord << 24) | (buf[2].ord << 16) | 
-             (buf[1].ord << 8) | buf[0].ord
-    end
-
     # out, temp - arrays[8]
     def strido(out, temp, i)   
       t  = Gost3411Table[0][(temp[0] >> (i * 8)) & 0xff]
@@ -174,8 +112,8 @@ module CryptoGost3411
       funcLPSX(tt, kk, m)
       funcLPSX(kk, kk, C16[0])
       (1...12).each do |i|
-        funcLPSX(tt, kk, tt);
-        funcLPSX(kk, kk, C16[i]);
+        funcLPSX(tt, kk, tt)
+        funcLPSX(kk, kk, C16[i])
       end
       
       (0...8).each do |i|
@@ -186,17 +124,17 @@ module CryptoGost3411
     def self.add512(x, y)
       x512 = x[7]
       (1...8).each do |i|
-        x512 = x512*(2**64) + x[7-i]
+        x512 = x512*Two64 + x[7-i]
       end  
       y512 = y[7]
       (1...8).each do |i|
-        y512 = y512*(2**64) + y[7-i]
+        y512 = y512*Two64 + y[7-i]
       end
-      r512 = (x512 + y512)%(2**512)
+      r512 = (x512 + y512)%Two512
       r = []
       (0...8).each do |i|
-        r << r512%(2**64)
-        r512 = (r512-r[-1])/(2**64)
+        r << r512%Two64
+        r512 = (r512-r[-1])/Two64
       end
       r
     end
@@ -205,7 +143,7 @@ module CryptoGost3411
       count512 = [nbytes*8,0,0,0,0,0,0,0]
       mM = []
       (0...8).each do |i|
-        mM << bufGetLE64(@block[(i * 8)...(i * 8 + 8)])
+        mM << uint8ToUint64(@block[(i * 8)...(i * 8 + 8)])
       end  
 
       funcG(@resH, mM, @nN)
@@ -216,6 +154,27 @@ module CryptoGost3411
     
     def self.printBytes(bytes, line_size = 16)
       bytes.unpack('H*')[0].scan(/.{1,#{line_size}}/).each{|s| puts(s)}
+    end
+    
+    def printCtx
+      puts '='*16 + ' Digest context ' + '='*16
+      puts "digest_size = #{@digest_size}"
+      puts "block_len = #{@block_len}"
+      puts 'block:'
+      self.class.printBytes(@block)
+      puts 'resH:'
+      (0...8).each do |i|
+        printf("0x%X\n", @resH[i])
+      end
+      puts 'nN:'
+      (0...8).each do |i|
+        printf("0x%X\n", @nN[i])
+      end
+      puts 'sigma:'
+      (0...8).each do |i|
+        printf("0x%X\n", @sigma[i])
+      end
+      puts "="*40
     end
 
   end
